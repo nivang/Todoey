@@ -11,27 +11,16 @@ import UIKit
 class TodoListViewController: UITableViewController {
 
     var itemArray = [Item]()
-    
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+ 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+       
+        print(dataFilePath)
         // Do any additional setup after loading the view, typically from a nib.
-        
-        let newItem	= Item()
-        newItem.title = "Post video"
-        itemArray.append(newItem)
-        
-        let newItem2 = Item()
-        newItem.title = "edit video"
-        itemArray.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem.title = "make video"
-        itemArray.append(newItem3   )
-        
-        if let items = defaults.array(forKey: "TodolistArray") as? [Item] {
-            itemArray = items
-        }
+    
+        loadItems()
     }
 
     //MARK - Tableview Datasource Methods
@@ -63,7 +52,7 @@ class TodoListViewController: UITableViewController {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
-        tableView.reloadData()
+        self.saveItems()
         
         tableView.deselectRow(at: indexPath, animated: true)
         
@@ -78,14 +67,13 @@ class TodoListViewController: UITableViewController {
             //what will happen when the user clicks add buttion
             
             let newItem = Item()
-            newItem.title = textField.text
+            newItem.title = textField.text!
             
             self.itemArray.append(newItem)
             
-            self.defaults.set(self.itemArray, forKey: "TodolistArray")
-            
-            self.tableView.reloadData()
+            self.saveItems()
         }
+            
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Create new item"
             textField = alertTextField
@@ -97,5 +85,31 @@ class TodoListViewController: UITableViewController {
         
     }
     
+    //MARK - Model Manupulation Methods
+    
+    func saveItems() {
+        
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(self.itemArray)
+            try data.write(to: self.dataFilePath!)
+        }catch{
+            print("Error encoding item array, \(error)")
+        }
+        self.tableView.reloadData()
+    }
+    
+    func loadItems() {
+        
+        let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+            itemArray = decoder.decode([Item].self, from: data)
+            }catch{
+                print("error decoding item array, \(error)")
+            }
+        }
+    }
 }
 
